@@ -11,7 +11,22 @@ import numpy as np
 import math
 import random
 import getopt
-import sys
+import os
+
+if not os.path.isdir('../data/traindata/l2weights'):
+    os.mkdir("../data/traindata/l2weights")
+if not os.path.isdir('../data/traindata/l3weights'):
+    os.mkdir("../data/traindata/l3weights")
+if not os.path.isdir('../data/traindata/feedbackweights'):
+    os.mkdir("../data/traindata/feedbackweights")
+if not os.path.isdir('../data/traindata/amplitudes'):
+    os.mkdir("../data/traindata/amplitudes")
+if not os.path.isdir('../data/traindata/alphas'):
+    os.mkdir("../data/traindata/alphas")
+if not os.path.isdir('../data/traindata/betas'):
+    os.mkdir("../data/traindata/betas")
+if not os.path.isdir('../data/traindata/errorfiles'):
+    os.mkdir("../data/traindata/errorfiles")
 
 # Command line parsing
 opts, args = getopt.getopt(sys.argv[1:], "a:l:t:m:n:e:d:o:v:")
@@ -29,6 +44,7 @@ for o, a in opts:
     elif o == "-e":
         exponent = int(float(a))
     elif o == "-d":
+        #Steepness
         div = int(a)
     elif o == "-o":
         log = int(a)
@@ -79,16 +95,17 @@ betas = np.exp(-dt/tau_decay)
 mf_agonist = co.Musclefibers(int(outputsize/2), alphas[0:int(outputsize/2)], betas[0:int(outputsize/2)])
 mf_antagonist = co.Musclefibers(int(outputsize/2), alphas[int(outputsize/2):int(outputsize)], betas[int(outputsize/2):int(outputsize)])
 
-iterations = 200000
+iterations = 800
 
 
 # Track scores
 hits = []
 errors = []
 
+print("Training started")
 for j in range(iterations):
-    if j%200 == 0:
-        print(f"Iteration {j}")
+    if j%200 == 0 and j != 0:
+        print(f"Iteration {j}   |  200 pt average hit rate {sum(hits[-200:])/200}")
         
     t = 0
 
@@ -197,27 +214,27 @@ for j in range(iterations):
             l3.update_weights(individualbadness, lr, previousactivation=1/(1 + np.exp(-l2.activityhistory_scaled)), limit=1)
             break
 
-extension = "lr={lr}_threshold={threshold}_maxamp={maxamp}_nsensorneurons={nsensorneurons}_exponent={exponent}_div={div}_log={log}_elig={elig}.txt"
+extension = f"lr={lr}_threshold={threshold}_maxamp={maxamp}_nsensorneurons={nsensorneurons}_exponent={exponent}_div={div}_log={log}_elig={elig}.txt"
 np.savetxt(
-    f"./l2weights/{extension}"
+    f"../data/traindata/l2weights/{extension}"
     , l2.weightmatrix)
 np.savetxt(
-    f"./l3weights/{extension}"
+    f"../data/traindata/l3weights/{extension}"
     , l3.weightmatrix)
 np.savetxt(
-    f"./feedbackweights/{extension}"
+    f"../data/traindata/feedbackweights/{extension}"
     , l2.feedbackweights)
 np.savetxt(
-    f"./amplitudes/{extension}"
+    f"../data/traindata/amplitudes/{extension}"
     , amplitudes)
 np.savetxt(
-    f"./alphas/{extension}"
+    f"../data/traindata/alphas/{extension}"
     , alphas)
 np.savetxt(
-    f"./betas/{extension}"
+    f"../data/traindata/betas/{extension}"
     , betas)
 
-with open(f"./errorfiles/{extension}",
+with open(f"../data/traindata/errorfiles/{extension}",
       'w') as errorfile:
     for id, err in enumerate(errors):
         errorfile.write(f"{err},{hits[id]}\n")

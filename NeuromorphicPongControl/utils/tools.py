@@ -4,6 +4,12 @@ from random import randint
 import scipy
 import random
 
+def laserpositions(start, spacing, count):
+    laserlist = []
+    for i in range(count):
+        laserlist.append(start + i*spacing)
+    return laserlist
+
 def passedlaser(ballposition_previous, ballposition_current, laserpositions):
 
     passedidx = 0
