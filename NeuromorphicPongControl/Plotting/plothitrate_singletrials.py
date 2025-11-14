@@ -56,7 +56,7 @@ errormat = np.asarray(errormat)
 
 parametermat_errormat = np.insert(parametermat, 0, errormat[:, -1], axis=1)
 sorted_by_col = parametermat_errormat[parametermat_errormat[:, 0].argsort()]
-np.savetxt("vanilla.txt",np.array(sorted_by_col))
+np.savetxt("parameter_error_table.txt",np.array(sorted_by_col))
 
 uniquelr = np.unique(parametermat[:, 0])
 uniquethr = np.unique(parametermat[:, 1])
