@@ -1,3 +1,5 @@
+'''Visualize the hit rates per parameter combination using a heatmap and circles that indicate the fraction of good trials.
+This is only possible using single runs. Adjust the "varnames" variable as needed.'''
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -8,9 +10,9 @@ plt.rcParams['font.weight'] = 'bold'
 # --------------------------------------------------
 # Load data
 # --------------------------------------------------
-varnames = ["Acc", r"$\alpha$", r"$V_{thr}$", "A", "#Sns", "R", "S"]
+varnames = ["Acc", r"$\alpha$", r"$V_{thr}$", "A", "#Sns", "R", "S", "L", "e"]
 
-parametermat = np.loadtxt("./vanilla.txt")
+parametermat = np.loadtxt("../data/traindata/parameter_error_table.txt")
 print("Loaded parameter matrix")
 
 df = pd.DataFrame(parametermat, columns=varnames)
@@ -79,7 +81,7 @@ fig, ax = plt.subplots(figsize=(14, 10))
 # Create colormap and RGBA array for transparency
 cmap = plt.get_cmap("viridis")
 normed = (avg_values - np.nanmin(avg_values)) / (np.nanmax(avg_values) - np.nanmin(avg_values))
-rgba_img = cmap(normed)
+rgba_img = cmap(avg_values)
 
 # --- Make all same-parameter blocks white ---
 row_params = [s.split('=')[0] for s in heatmap_data.index]
@@ -111,7 +113,7 @@ for i in range(avg_values.shape[0]):
         if frac > 0:  # draw only where there is at least one good run
             ax.scatter(j, i, s=marker_sizes[i, j],
                        c='black', alpha=0.7, edgecolors='white', linewidths=1.5)
-
+            
 # --------------------------------------------------
 # Final decorations
 # --------------------------------------------------
@@ -126,7 +128,7 @@ ax.set_yticks(np.arange(len(heatmap_data.index)))
 ax.set_xticklabels(heatmap_data.columns, rotation=90)
 ax.set_yticklabels(heatmap_data.index)
 
-plt.text(0,-1, "B")
+# plt.text(0,-1, "B")
 plt.tight_layout()
 
-plt.savefig("3b_ParameterCombiMatrix_vanilla_circles.jpeg")
+plt.savefig("../data/imgs/ParameterCombiMatrix_vanilla_circles.jpeg")

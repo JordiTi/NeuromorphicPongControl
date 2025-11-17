@@ -7,7 +7,7 @@ plt.rcParams.update({'font.size': 25})
 plt.rcParams['font.weight'] = 'bold'
 
 # === Load data ===
-data = np.loadtxt("parameter_error_table.txt", delimiter=" ")
+data = np.loadtxt("../data/traindata/parameter_error_table.txt", delimiter=" ")
 # assuming your file has a header; remove skiprows=1 if no header
 onlydecay = data[data[:,-1] != 1]
 print(onlydecay)
@@ -32,7 +32,7 @@ plt.hist(accuracy, bins=bin_edges, edgecolor='white')
 plt.xlabel("Hit rate", weight='bold')
 plt.ylabel("Count", weight='bold')
 plt.axvline(0.85, color='r', linestyle='dashed', linewidth=2)
-plt.text(0,28, "A")
+# plt.text(0,28, "A")
 plt.tight_layout()
 
-plt.savefig("PerformanceHistogram.jpeg")
+plt.savefig("../data/imgs/PerformanceHistogram.jpeg")
