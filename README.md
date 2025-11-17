@@ -1,6 +1,8 @@
 
 # Neuromuscular-inspired control in Pong
 
+## Requirements
+requirements can be downloaded with 
 ## Encoding
 ![Adjusted Pong environment](NeuromorphicPongControl/data/imgs/2_Environment.jpg)
 
