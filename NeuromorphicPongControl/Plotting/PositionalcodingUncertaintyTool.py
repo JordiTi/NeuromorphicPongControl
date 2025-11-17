@@ -1,8 +1,12 @@
+'''Tool to determine what the error is given non-overlapping positional coding.
+This is not direclty applicable to the paper but might give you intuition on how big the paddle
+needs to be.'''
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.widgets import TextBox
 from matplotlib.widgets import Slider
 
+# Plot the trajectory of the ball
 def getballtrajectory(ballangle, ballstart):
     upperbounce = 0
     lowerbounce = 0
@@ -21,7 +25,7 @@ def getballtrajectory(ballangle, ballstart):
     else:
         return [ballstart, ballangle * 2000 + ballstart]
 
-
+# Given initial position of sensors, create sensor lines for plotting
 def getsensorlines(sensors):
     sensorlines = []
     for s in sensors:
@@ -29,18 +33,7 @@ def getsensorlines(sensors):
         sensorlines.append([0, 1600])
     return sensorlines
 
-
-def getpassingpositions(sensors, ballangle, ballstart):
-    passingpositions = []
-    for sensor in sensors:
-        passingposition = ballangle * sensor + ballstart
-        if passingposition > 1600:
-            passingposition = 1600 * 2 - passingposition
-        elif passingposition < 0:
-            passingposition = abs(passingposition)
-        passingpositions.append(passingposition)
-    return passingpositions
-
+# Compute the uncertainty given the resolution of the sensor and the positions where the ball passes
 def computeuncertaintylines(sensor1, sensor2, passingpositions, sensoredges):
 
     linex1 = sensors[sensor1]
@@ -73,6 +66,8 @@ def computeuncertaintylines(sensor1, sensor2, passingpositions, sensoredges):
                 break
     return linex1, linex2, liney11, liney12, liney21, liney22
 
+
+# Determine on what y positions the ball passes the sensor
 def computepassingpositions(ballangle, sensors, ballstart):
     passingpositions = []
     for sensor in sensors:
@@ -84,6 +79,7 @@ def computepassingpositions(ballangle, sensors, ballstart):
         passingpositions.append(passingposition)
     return passingpositions
 
+# Creates lines for drawing 
 def getuncertaintylines(bouncex, sensors, passingpositions, sensoredges):
     if bouncex is None or bouncex <= sensors[0] or bouncex > sensors[2]:
         sensor1 = 0
@@ -91,7 +87,7 @@ def getuncertaintylines(bouncex, sensors, passingpositions, sensoredges):
         linex1, linex2, liney11, liney12, liney21, liney22 = (
             computeuncertaintylines(sensor1, sensor2, passingpositions, sensoredges))
 
-    # Ball bounces between sensors 1 and 2, now only sensors 2 and 3 count uncertainty
+    # Ball bounces between sensors 1 and 2, now only sensors 2 and 3 determine uncertainty
     elif sensors[0] < bouncex <= sensors[1]:
         sensor1 = 1
         sensor2 = 2
@@ -106,8 +102,8 @@ def getuncertaintylines(bouncex, sensors, passingpositions, sensoredges):
     return linex1, linex2, liney11, liney12, liney21, liney22
 
 
+# Some initialization
 xvals = [0, 2000]
-
 ballstart = 801
 ballangle = 0
 sensors = [100, 800, 1500]

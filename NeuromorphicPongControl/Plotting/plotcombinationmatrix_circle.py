@@ -7,20 +7,18 @@ import pandas as pd
 plt.rcParams.update({'font.size': 25})
 plt.rcParams['font.weight'] = 'bold'
 
-# --------------------------------------------------
-# Load data
-# --------------------------------------------------
+# Declare variable names for the axis labels
 varnames = ["Acc", r"$\alpha$", r"$V_{thr}$", "A", "#Sns", "R", "S", "L", "e"]
 
+# Load data
 parametermat = np.loadtxt("../data/traindata/parameter_error_table.txt")
 print("Loaded parameter matrix")
 
+# Combine variable names and data
 df = pd.DataFrame(parametermat, columns=varnames)
 params = [col for col in df.columns if col != "Acc"]
 
-# --------------------------------------------------
 # Build multi-index for parameter combinations
-# --------------------------------------------------
 totalcombis = 1
 uniqueparametervalues = []
 row_labels = []
@@ -29,16 +27,17 @@ for p in params:
     uniqueparametervalues.append(len(df[p].unique()))
     for v in sorted(df[p].unique()):
         row_labels.append((p, v))
-# --------------------------------------------------
+
+
 # Create matrices for mean accuracy and good fraction
-# --------------------------------------------------
 heatmap_data = pd.DataFrame(index=pd.MultiIndex.from_tuples(row_labels),
                             columns=pd.MultiIndex.from_tuples(row_labels))
 good_fraction = pd.DataFrame(index=pd.MultiIndex.from_tuples(row_labels),
                              columns=pd.MultiIndex.from_tuples(row_labels))
 
 print("Generated heatmap data")
-# Fill matrices
+
+# Fill matrices. Threshold accuracy values with 0.85 to distinguish  between good and bad hit rates.
 for idx_1, (i_p, i_v) in enumerate(row_labels):
     for idx_2, (j_p, j_v) in enumerate(row_labels):
         mask = (df[i_p] == i_v) & (df[j_p] == j_v)
@@ -53,9 +52,7 @@ for idx_1, (i_p, i_v) in enumerate(row_labels):
 
 print("Calculated mean accuracies and good fractions")
 
-# --------------------------------------------------
-# Clean up
-# --------------------------------------------------
+# Clean up code
 heatmap_data = heatmap_data.astype(float)
 good_fraction = good_fraction.astype(float)
 
@@ -67,23 +64,17 @@ heatmap_data.columns = [f"{p}={v}" for p, v in heatmap_data.columns]
 good_fraction.index = heatmap_data.index
 good_fraction.columns = heatmap_data.columns
 
-# --------------------------------------------------
-# Prepare arrays
-# --------------------------------------------------
 avg_values = heatmap_data.values
 good_values = good_fraction.values
 
-# --------------------------------------------------
 # Plot heatmap
-# --------------------------------------------------
 fig, ax = plt.subplots(figsize=(14, 10))
 
-# Create colormap and RGBA array for transparency
+# Create colormap 
 cmap = plt.get_cmap("viridis")
-normed = (avg_values - np.nanmin(avg_values)) / (np.nanmax(avg_values) - np.nanmin(avg_values))
 rgba_img = cmap(avg_values)
 
-# --- Make all same-parameter blocks white ---
+# Make all same-parameter blocks white, as there is no interaction between the two
 row_params = [s.split('=')[0] for s in heatmap_data.index]
 col_params = [s.split('=')[0] for s in heatmap_data.columns]
 unique_params = sorted(set(row_params))
@@ -99,9 +90,7 @@ for p in unique_params:
 # Display base heatmap
 im = ax.imshow(rgba_img, interpolation="none", aspect="auto")
 
-# --------------------------------------------------
 # Marker overlay (shows fraction of good runs)
-# --------------------------------------------------
 # Marker size scaled by good fraction
 marker_sizes = 1000 * np.nan_to_num(good_values, nan=0.0)
 
@@ -114,10 +103,8 @@ for i in range(avg_values.shape[0]):
             ax.scatter(j, i, s=marker_sizes[i, j],
                        c='black', alpha=0.7, edgecolors='white', linewidths=1.5)
             
-# --------------------------------------------------
-# Final decorations
-# --------------------------------------------------
-# Colorbar for accuracy
+
+# add colorbar for reference
 sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=0, vmax=1))
 cbar = plt.colorbar(sm, ax=ax)
 cbar.ax.set_ylabel("Accuracy", fontweight="bold")
