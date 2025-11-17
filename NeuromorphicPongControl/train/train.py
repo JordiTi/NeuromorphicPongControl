@@ -1,3 +1,4 @@
+'''Train the neuromuscular-inspired model on the Pong game.'''
 from pathlib import Path
 import sys
 parent_dir = Path(__file__).resolve().parent.parent
@@ -29,7 +30,7 @@ if not os.path.isdir('../data/traindata/errorfiles'):
     os.mkdir("../data/traindata/errorfiles")
 
 # Command line parsing
-opts, args = getopt.getopt(sys.argv[1:], "a:l:t:m:n:e:d:o:v:")
+opts, args = getopt.getopt(sys.argv[1:], "a:l:t:m:n:e:d:o:v:r:")
 for o, a in opts:
     if o == "-a":
         ballangle_max = float(a)
@@ -50,6 +51,8 @@ for o, a in opts:
         log = int(a)
     elif o == "-v":
         elig = float(a)
+    elif o == "-r":
+        run = int(a)
 
 # Initialize environment
 dx = 400
@@ -95,7 +98,7 @@ betas = np.exp(-dt/tau_decay)
 mf_agonist = co.Musclefibers(int(outputsize/2), alphas[0:int(outputsize/2)], betas[0:int(outputsize/2)])
 mf_antagonist = co.Musclefibers(int(outputsize/2), alphas[int(outputsize/2):int(outputsize)], betas[int(outputsize/2):int(outputsize)])
 
-iterations = 800
+iterations = 1000
 
 
 # Track scores
@@ -214,7 +217,8 @@ for j in range(iterations):
             l3.update_weights(individualbadness, lr, previousactivation=1/(1 + np.exp(-l2.activityhistory_scaled)), limit=1)
             break
 
-extension = f"lr={lr}_threshold={threshold}_maxamp={maxamp}_nsensorneurons={nsensorneurons}_exponent={exponent}_div={div}_log={log}_elig={elig}.txt"
+print("Saving training data...")
+extension = f"lr={lr}_threshold={threshold}_maxamp={maxamp}_nsensorneurons={nsensorneurons}_exponent={exponent}_div={div}_log={log}_elig={elig}_run={run}.txt"
 np.savetxt(
     f"../data/traindata/l2weights/{extension}"
     , l2.weightmatrix)
@@ -238,3 +242,5 @@ with open(f"../data/traindata/errorfiles/{extension}",
       'w') as errorfile:
     for id, err in enumerate(errors):
         errorfile.write(f"{err},{hits[id]}\n")
+
+print("Training finished")
