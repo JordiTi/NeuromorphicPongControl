@@ -1,52 +1,78 @@
-import ContinuousObjects as co
-import utils
-from ContinuousEnvironment import Environment
-from ContinuousObjects import Ball, Paddle
-import numpy as np
-import random
-import math
-import matplotlib.pyplot as plt
+'''Visualization of the Pong game, given parameters. Press any button to quit the simulation.
+Run the following to see the best model: python3 visualize_game.py -a 0.5 -l 0.01 -t 2 -m 25 -n 50 -e -50 -d 100 -o 1 -e 0.995 -r 0'''
+
+import imageio
+record_gif = False
+gif_frames = []
+gif_name = "pong.gif"
+
+from pathlib import Path
 import sys
+parent_dir = Path(__file__).resolve().parent.parent
+sys.path.append(str(parent_dir))
+
+import utils.ContinuousObjects as co
+import utils.tools as tools
+from utils.ContinuousEnvironment import Environment
+from utils.ContinuousObjects import Ball, Paddle
+import numpy as np
+import math
+import random
 import getopt
-import pandas as pd
-import matplotlib.animation as animation
+import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
 '''
 Visualize the paddle's behaviour in a live plot by loading all the network parameters and hyperparameters
 '''
 # Command line parsing
-opts, args = getopt.getopt(sys.argv[1:], "l:a:d:t:m:e:n:i:", ["lr=", "angle=", "dx=", "th1=", "maxamp=", "exponent=", "nsensorneurons=", "inhib="])
+opts, args = getopt.getopt(sys.argv[1:], "a:l:t:m:n:e:d:o:v:r:g:")
 for o, a in opts:
-    if o == "-l" or o == "--lr":
-        lr = float(a)
-    elif o == "-a" or o == "--angle":
+    if o == "-a":
         ballangle_max = float(a)
-    elif o == "-d" or o == "--dx":
-        dx = int(a)
-    elif o == "-t" or o == "--th1":
-        th1 = int(a)
-    elif o == "-m" or o == "--maxamp":
+    elif o == "-l":
+        lr = float(a)
+    elif o == "-t":
+        threshold = int(a)
+    elif o == "-m":
         maxamp = int(a)
-    elif o == "-e" or o == "--exponent":
-        exponent = float(a)
-    elif o == "-n" or o == "--nsensorneurons":
+    elif o == "-n":
         nsensorneurons = int(a)
-    elif o == "-i" or o == "--inhib":
-        inhib = int(a)
+    elif o == "-e":
+        exponent = int(float(a))
+    elif o == "-d":
+        #Steepness
+        div = int(a)
+    elif o == "-o":
+        log = int(a)
+    elif o == "-v":
+        elig = float(a)
+    elif o == "-r":
+        run = int(a)
+    elif o == "-g":
+        record_gif = True
 
-mainpath = "../fba_pos_inhib_prob"
+mainpath = "./Visualizationdata"
+# extension = f"lr={lr}_threshold={threshold}_maxamp={maxamp}_nsensorneurons={nsensorneurons}_exponent={exponent}_div={div}_log={log}_elig={elig}_run={run}.txt"
+extension = f"lr={lr}_threshold={threshold}_maxamp={maxamp}_nsensorneurons={nsensorneurons}_exponent={exponent}_div={div}_elig={elig}.txt"
+
 # Initialize environment
+dx = 400
 width = 2000
 height = 1601
 env = Environment(height, width)
 dt = 1
-laserlist = utils.laserpositions(100, dx, 3)
 
+# Initialize LiDAR's and encoders
+laserlist = tools.laserpositions(100, dx, 3)
+sensorcenters = np.linspace(-500, height+500, nsensorneurons)/height
+
+# Initialize ball
 ball = Ball()
 ball.size = 1
 ballangle_max = ballangle_max
 
+# Initialize paddle
 paddle = Paddle()
 paddle.height = 256
 paddle.width = 1
@@ -55,48 +81,34 @@ paddle.width = 1
 outputsize = 100
 networkneurons = [nsensorneurons*(len(laserlist)+1), 50, outputsize]
 
-# Specify neuron behaviour per layer
-thresholds = [th1, 20, 20]
-leaktimeconstants = [50, 50, 50]
+
+# Specify neuron thresholds per layer
+thresholds = [threshold, 20, 20]
 thresholdlist = [np.ones(value)*thresholds[idx] for idx, value in enumerate(networkneurons)]
-leakfactorlist = [np.exp(-1/(np.ones(value)*leaktimeconstants[idx])) for idx, value in enumerate(networkneurons)]
 
 # Generate neuron weights
-l1l2weights = np.loadtxt(mainpath + "/l1l2weights/" + f"lr={lr}_angle={ballangle_max}_dx={dx}_threshold={th1}_maxamp={maxamp}_exponents={exponent}_nsensorneurons={nsensorneurons}_inhib_prob={inhib}.txt")
-l2l3weights = np.loadtxt(mainpath + "/l2l3weights/" + f"lr={lr}_angle={ballangle_max}_dx={dx}_threshold={th1}_maxamp={maxamp}_exponents={exponent}_nsensorneurons={nsensorneurons}_inhib_prob={inhib}.txt")
+l2weights = np.loadtxt(mainpath + "/l2weights/" + extension)
+l3weights = np.loadtxt(mainpath + "/l3weights/" + extension)
 
 # Generate DFA weights
-l1l2feedbackweights = np.loadtxt(mainpath + "/feedbackweights/" + f"lr={lr}_angle={ballangle_max}_dx={dx}_threshold={th1}_maxamp={maxamp}_exponents={exponent}_nsensorneurons={nsensorneurons}_inhib_prob={inhib}.txt")
+feedbackweights = np.loadtxt(mainpath + "/feedbackweights/" + extension)
 
 # Generate muscle fiber amplitudes
-amplitudes = np.loadtxt(mainpath + "/amplitudes/" + f"lr={lr}_angle={ballangle_max}_dx={dx}_threshold={th1}_maxamp={maxamp}_exponents={exponent}_nsensorneurons={nsensorneurons}_inhib_prob={inhib}.txt")
+amplitudes = np.loadtxt(mainpath + "/amplitudes/" + extension)
 
-l1 = co.Layer(networkneurons[0], thresholdlist[0],  layertype="input", weights=l1l2weights, neurontypes="IF", thresholdtype="static", elig=1)
-l2 = co.Layer(networkneurons[1], thresholdlist[1],  layertype="hidden", weights=l2l3weights, neurontypes="IF", thresholdtype="static", elig=1)
-l3 = co.Layer(networkneurons[2], thresholdlist[2],layertype="output", neurontypes="IF", elig=1)
+l1 = co.Layer(networkneurons[0], networkneurons[0], networkneurons[2],  "input", thresholdlist[0], div, elig)
+l2 = co.Layer(networkneurons[0], networkneurons[1],  networkneurons[2], "hidden", thresholdlist[1], div, elig)
+l3 = co.Layer(networkneurons[1], networkneurons[2], networkneurons[2], "output", thresholdlist[2], div, elig)
+l2.weightmatrix = l2weights
+l3.weightmatrix = l3weights
+layers = [l1, l2, l3]
 
-
-alphas = np.loadtxt(mainpath + "/alphas/" + f"lr={lr}_angle={ballangle_max}_dx={dx}_threshold={th1}_maxamp={maxamp}_exponents={exponent}_nsensorneurons={nsensorneurons}_inhib_prob={inhib}.txt")
-betas = np.loadtxt(mainpath + "/betas/" + f"lr={lr}_angle={ballangle_max}_dx={dx}_threshold={th1}_maxamp={maxamp}_exponents={exponent}_nsensorneurons={nsensorneurons}_inhib_prob={inhib}.txt")
+alphas = np.loadtxt(mainpath + "/alphas/" + extension)
+betas = np.loadtxt(mainpath + "/betas/" + extension)
 mf_agonist = co.Musclefibers(int(outputsize/2), alphas[0:int(outputsize/2)], betas[0:int(outputsize/2)])
 mf_antagonist = co.Musclefibers(int(outputsize/2), alphas[int(outputsize/2):int(outputsize)], betas[int(outputsize/2):int(outputsize)])
 
-layers = [l1, l2, l3]
-
-inputhist1 = np.zeros([networkneurons[0], int(width*1.25)])
-inputhist2 = np.zeros([networkneurons[1], int(width*1.25)])
-inputhist3 = np.zeros([networkneurons[2], int(width*1.25)])
-
-outputhist1 = np.zeros([networkneurons[0], int(width*1.25)])
-outputhist2 = np.zeros([networkneurons[1], int(width*1.25)])
-outputhist3 = np.zeros([networkneurons[2], int(width*1.25)])
-
-chargehist1 = np.zeros([networkneurons[0], int(width*1.25)])
-chargehist2 = np.zeros([networkneurons[1], int(width*1.25)])
-chargehist3 = np.zeros([networkneurons[2], int(width*1.25)])
-
-
-iterations = 100000
+iterations = 20
 
 sensorcenters = np.linspace(-500, height+500, nsensorneurons)/height
 indices = []
@@ -107,12 +119,17 @@ errors = []
 fig = plt.figure(figsize=(5, 4))
 ax = fig.add_subplot(autoscale_on=False, xlim=(0, width), ylim=(0, height))
 plt.axis('scaled')
-paddleimg = ax.add_patch(patches.Rectangle((1975, 1), 25, 250))
-ballimg = ax.add_patch(patches.Rectangle((0, 0), 40, 40))
-p1 = ax.add_patch(patches.Rectangle((100, 0), 10, 1600, color="red"))
-p2 = ax.add_patch(patches.Rectangle((500, 0), 10, 1600, color="red"))
-p3 = ax.add_patch(patches.Rectangle((900, 0), 10, 1600, color="red"))
-score = ax.set_title("0  0        0%")
+paddleimg = ax.add_patch(patches.Rectangle((1975, 1), 25, 250, color="red"))
+ballimg = ax.add_patch(patches.Rectangle((0, 0), 40, 40, color="green"))
+p1 = ax.add_patch(patches.Rectangle((100, 0), 10, 1600, color="purple"))
+p2 = ax.add_patch(patches.Rectangle((500, 0), 10, 1600, color="purple"))
+p3 = ax.add_patch(patches.Rectangle((900, 0), 10, 1600, color="purple"))
+vline = ax.vlines(1000, 0, 1600, colors="white", linestyles="dashed")
+vline.set_linewidth(4)
+ax.set_xticks([])
+ax.set_yticks([])
+score = ax.set_title(f"HIT:0 | MISS:0 | 100%")
+ax.set_facecolor("Black")
 
 
 for j in range(iterations):
@@ -147,14 +164,6 @@ for j in range(iterations):
     paddleposhist = []
     ballposhist = []
 
-    # Keep track of neural activation
-    l2activityhist = np.zeros(l2.nneurons)
-    l3activityhist = np.zeros(l3.nneurons)
-
-    l1outspikehist = np.zeros(networkneurons[0])
-    l2outspikehist = np.zeros(networkneurons[1])
-    l3outspikehist = np.zeros(networkneurons[2])
-
     sensorsignals = np.zeros(len(sensorcenters))
     sensoryneuronsignals = np.zeros(nsensorneurons*4)
 
@@ -166,7 +175,7 @@ for j in range(iterations):
         # initialize ball and paddle
 
         ball.move()
-        idx, position = utils.passedlaser(previousballposition, ball.position, laserlist)
+        idx, position = tools.passedlaser(previousballposition, ball.position, laserlist)
         previousballposition = ball.position.copy()
 
         if position:
@@ -181,15 +190,14 @@ for j in range(iterations):
                 sensoryneuronsignals.append(sensoroutputs.copy())
             sensoryneuronsignals = np.array(sensoryneuronsignals).flatten()
             calculated = 1
+            inputspikerate = sensoryneuronsignals/threshold
 
-        a1, outputspikesl1 = l1.update_neurons(sensoryneuronsignals, prob=1)
-        a2, outputspikesl2 = l2.update_neurons(a1)
-
-        # Charge output layer and update outputs
-        outputspikesl3 = l3.update_neurons(a2)
+        outputspikesl1 = l1.update_neurons(sensoryneuronsignals, prob=1)
+        outputspikesl2 = l2.update_neurons(outputspikesl1, l1.thresholds)
+        outputspikesl3 = l3.update_neurons(outputspikesl2, l2.thresholds)
         mf_agonist.update(outputspikesl3[0:int(outputsize/2)], amplitudes[0:int(outputsize/2)])
         mf_antagonist.update(outputspikesl3[int(outputsize/2):int(outputsize)], amplitudes[int(outputsize/2):int(outputsize)])
-
+        
         # Move paddle
         dxagonist = np.sum(mf_agonist.fibers_c2)
         dxantagonist = np.sum(mf_antagonist.fibers_c2)
@@ -199,10 +207,30 @@ for j in range(iterations):
             ballimg.set_xy([ball.position[0], ball.position[1]])
             paddleimg.set_xy([1975, paddle.position ])
             plt.draw()
+
+            # --- Record GIF frame ---
+            if record_gif:
+                fig.canvas.draw()
+
+                # Get ARGB buffer
+                buf = fig.canvas.get_renderer().tostring_argb()
+                w, h = fig.canvas.get_width_height()
+
+                # Convert to numpy array
+                frame = np.frombuffer(buf, dtype=np.uint8).reshape((h, w, 4))
+
+                # Convert ARGB → RGB (drop alpha)
+                frame = frame[:, :, 1:4]
+
+                gif_frames.append(frame)
+            # -------------------------
+
             if sum(hits):
-                score.set_text(f"{sum(hits)}  {len(hits)-sum(hits)}        {sum(hits)/len(hits)*100:.0f}%")
-            if plt.waitforbuttonpress(0.01): quit()
-        #Limit paddle
+                score.set_text(f"HIT:{sum(hits)} | MISS:{len(hits)-sum(hits)} | {sum(hits)/len(hits)*100:.0f}%")
+
+            if not record_gif:
+                if plt.waitforbuttonpress(0.01):
+                    quit()
         # paddle.position = min(max(paddle.position, 0), height-paddle.height)
 
         # Save history
@@ -239,3 +267,7 @@ for j in range(iterations):
 
             break
 
+if record_gif:
+    print(f"Saving GIF: {gif_name}")
+    imageio.mimsave(gif_name, gif_frames, fps=30)
+    print("GIF saved.")
