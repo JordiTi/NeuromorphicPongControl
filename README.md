@@ -1,6 +1,8 @@
 
 # Neuromuscular-inspired control in Pong
 
+![Pong GIF](NeuromorphicPongControl/Visualization/pong.gif)
+
 ## Requirements
 requirements can be downloaded with 
 ## Encoding
@@ -19,4 +21,5 @@ For figures 3a-5a:<br>
 Run plotPerformanceHistogram.py<br>
 For figures 3b-5b:<br>
 Run plotcombinationmatrix_circle.py
+
 
