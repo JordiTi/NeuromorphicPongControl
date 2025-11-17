@@ -50,7 +50,11 @@ for o, a in opts:
     elif o == "-r":
         run = int(a)
     elif o == "-g":
-        record_gif = True
+        if int(a) == 0:
+            print("HI")
+            record_gif = False
+        else:
+            record_gif = True
 
 mainpath = "./Visualizationdata"
 # extension = f"lr={lr}_threshold={threshold}_maxamp={maxamp}_nsensorneurons={nsensorneurons}_exponent={exponent}_div={div}_log={log}_elig={elig}_run={run}.txt"
