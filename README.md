@@ -3,6 +3,11 @@
 
 ![Pong GIF](NeuromorphicPongControl/Visualization/pong.gif)
 
+This repository contains code where you can train a neuromuscular-inspired system to play the game of pong. To download the required packages,
+'''
+    pip install -r requirements.txt
+'''
+
 ## Requirements
 requirements can be downloaded with 
 ## Encoding
