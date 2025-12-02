@@ -1,4 +1,4 @@
-'''Visualization of the Pong game, given parameters. Press any button to quit the simulation.
+'''Visualization of the Pong game, given parameters, learned weights, and corresponding randomly initialized parameters. Press any button to quit the simulation.
 Run the following to see the best model: python3 visualize_game.py -a 0.5 -l 0.01 -t 2 -m 25 -n 50 -e -50 -d 100 -o 1 -e 0.995 -r 0'''
 
 import imageio
