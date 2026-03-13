@@ -8,10 +8,12 @@ plt.rcParams.update({'font.size': 25})
 plt.rcParams['font.weight'] = 'bold'
 
 # Declare variable names for the axis labels
-varnames = ["Acc", r"$\alpha$", r"$V_{thr}$", "A", "#Sns", "R", "S", "L", "e"]
+# adjust as needed
+varnames = ["Acc", r"$\alpha$", r"$V_{thr}$", "A", "#Sns", "R", "S"]
 
 # Load data
-parametermat = np.loadtxt("../data/traindata/parameter_error_table.txt")
+path = "SIF-DFA"
+parametermat = np.loadtxt("../data/plottingdata/SIF-DFA.txt")
 print("Loaded parameter matrix")
 
 # Combine variable names and data
@@ -118,4 +120,4 @@ ax.set_yticklabels(heatmap_data.index)
 # plt.text(0,-1, "B")
 plt.tight_layout()
 
-plt.savefig("../data/imgs/ParameterCombiMatrix_vanilla_circles.jpeg")
+plt.savefig(f"../data/imgs/combimatrix_{path}.jpeg")

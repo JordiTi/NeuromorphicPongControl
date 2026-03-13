@@ -11,7 +11,7 @@ import random
 plt.rcParams.update({'font.size': 20})
 parametermat = []
 errormat = []
-averagekernel = 100 # pt moving average
+averagekernel = 10000 # pt moving average
 
 print("Collecting data...")
 resultfilenames = os.listdir("../data/traindata/errorfiles/")
